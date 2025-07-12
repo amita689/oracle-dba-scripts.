@@ -1,0 +1,758 @@
+#oracle 19c installation in RHEL
+
+
+6[A)	Creation of Virtual Machine
+Steps:
+1.	Create a new machine
+2.	Next
+3.	Click on- I will install later
+4.	Linux- version- redhat enterprise linux*8.64-bit
+5.	Next
+6.	Vm name- give any name
+7.	Location- select which has atleast 100 GB free
+8.	Maximum disk- here we can take 20 GB as of now.
+9.	Edit virtual machine
+10.	Memory for vm- 8192 MB (8GB)
+11.	Processor- 4
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+B)	Installation of RHEL8
+Steps:
+1.	Click on CD/DVD (SATA)
+2.	Use ISO image file
+3.	Now, select file via browser
+4.	Ok
+5.	Power on this virtual machine
+6.	Install RED and press enter
+7.	Installation destination
+8.	We have 20GB and now want to do partition
+9.	To do partition click on 
+10.	Custom
+11.	Done
+12.	Standard partition
+13.	Click on +
+14.	In window, we say drive and in Linux we say it mount
+15.	Mount point
+16.	First, we create swap mount point
+17.	Desired capacity
+18.	For swap, we select RAM as same we have given RAM already- 10G and click on add mount point.
+19.	Now, we have left with 10GB
+20.	Just take mount point as /
+21.	Do not type in desired capacity just click on add mount point.
+22.	Done
+23.	Done
+24.	Accept changes
+25.	Kdump
+26.	Click on disabled
+27.	Set date and time
+28.	Root password
+29.	User creation
+30.	Done 
+31.	Done
+32.	Begin installation
+33.	Reboot system
+34.	Next
+35.	System (finish configuration)
+36.	Select- not listed
+37.	User_name- root
+38.	Pswd- 000000
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Note: Any Linux admin follow these steps only and during linux installation, we have to tell linux team regarding SWAP requirement.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SWAP- In Linux, "swap" refers to a dedicated space on the hard drive that acts as an extension of physical RAM, allowing the system to temporarily store data from memory when it becomes full, essentially creating "virtual memory" by swapping out less actively used data to free up RAM for new processes; it's a way to run more programs than the physical RAM capacity allows. 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+C)	IP settings
+Steps:
+1.	Power button
+2.	Wired off
+3.	Wired settings
+4.	Wired- network
+5.	Settings icon- details
+6.	Check on- connect automatically
+7.	IPV4
+8.	Manual
+9.	IP- 192.168.10.165
+10.	Mask- 255.255.255.0
+11.	Apply
+12.	Close
+13.	How to verify above IP- use command- ifconfig and press enter
+14.	To change hostname- use command- hostnamectl set-hostname primary_database
+15.	Exit and login again, new hostname will start reflect.
+
+How I Enabled Ping from VM to Host in Bridged Mode (VMware)
+
+Check Active Adapter on Host (Windows)
+ipconfig
+
+
+Configure Bridged Adapter in VMware
+
+Edit → Virtual Network Editor → Change Settings (Admin)
+
+Bridged to: Realtek RTL8822CE 802.11ac PCIe Adapter (your active Wi-Fi)
+
+Set VM Network Adapter to Bridged Mode
+
+Bridged: Connected directly to the physical network
+Replicate physical network connection state
+
+
+Boot VM and Set Static IP (Because DHCP Failed)
+Set static IP using nmcli
+
+
+sudo nmcli con mod ens160 ipv4.addresses 192.168.1.101/24
+sudo nmcli con mod ens160 ipv4.gateway 192.168.1.1
+sudo nmcli con mod ens160 ipv4.dns 8.8.8.8
+sudo nmcli con mod ens160 ipv4.method manual
+sudo nmcli con down ens160
+sudo nmcli con up ens160
+
+Verify VM IP Address
+ip a
+
+Enable Ping on Windows (Firewall)
+netsh advfirewall firewall add rule name="Allow ICMPv4-In" protocol=icmpv4:8,any dir=in action=allow
+
+
+Ping Test (Both Sides)
+From VM to Host:
+ping 192.168.1.2
+
+From Host to VM:
+ping 192.168.1.101
+
+
+ 
+
+
+
+If net is not working in server then follow below steps:
+Manually Set DNS (Google DNS)
+Aapko /etc/resolv.conf file mein DNS set karna hoga.
+Set DNS Temporarily
+Run below command
+
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
+Test DNS
+
+ping yum.oracle.com
+
+Retry Yum
+
+yum clean all
+yum makecache
+yum install telnet -y
+
+
+
+
+
+D)	How to map both IP and hostname  - 
+
+vi /etc/hosts
+Press I
+Type- 192.168.1.101		primary                 primary    , and save this.
+
+Note: If 5 servers have same- 192.168.10 so, it means that all 5 servers are able to communicate with each other. So, to identify these differently we need to give like this: 192.168.10.165.100
+192.168.10.165.101
+192.168.10.165.102 and so on.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Note: To read a file we use cat command.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+E)	Create link between local and Linux machine
+
+1.	Open local system and type in cmd- ping 192.168.10.165 -t   (-t for continuous flow)
+2.	It will not work for first time.
+3.	So, follow these below steps:
+4.	Right click on WIFI icon
+5.	Network and internet settings
+6.	Advanced network settings
+7.	Click on VMware network adapter vmnet8
+8.	Edit
+9.	Internet protocol version4 (TCP/IPV4)
+10.	Properties
+11.	In first part, select- use the following IP address.
+12.	IP- 192.168.10.3 (only first three digits should be same and last one should be different)
+13.	Press tab
+14.	Do not touch DNS server
+15.	Ok
+16.	Close
+17.	Now ping in local machine
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Note- Because we took / and give 10GB to SWAP. Now, we must work with YUM so, must shut down previous one.
+To shut down, use command-  init 0
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+As of now, in VM there is no hard disk. We need to map hard disk for:
+1.	Oracle software
+2.	Database
+3.	To create a YUM server
+
+1.	Edit virtual machine
+2.	Add
+3.	Hard disk – add
+4.	NVMe – add
+5.	Create a new virtual disk
+6.	Maximum disk size- 100
+7.	Next
+8.	Finish
+9.	Power on
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Login- as root and password is 000000
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Df -hP – this will show normal disk partition
+Fdisk -l  -  to see recent added HD
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+We can do partition with name of u01 and u02
+
+F)	How to do partition
+
+1.	fdisk -l
+2.	lsblk
+3.	we will create 3 partitions for:
+a)	oracle binary
+b)	database files
+c)	yum server
+
+fdisk -l
+fdisk now paste reference like: /dev/nvme0n2 
+6.	help : n
+7.	select p – primary
+8.	number- hit enter (by default, it will take 1)
+9.	first sector- hit enter
+10.	last sector- +15G
+11.	now, do this for rest of 2
+12.	when we see this message: value out of range then press enter and type w for save.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+G)	How to format the partition
+With command- mkfs.ext4 and paste reference like: /dev/nvmeon2p1 and so on for others two.
+fdisk -l
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+H)	How to mount the partition
+
+Moun means to give access point.
+
+First, we will create a directory where we need to mount the partition
+
+mkdir /yum
+mkdir /u01
+mkdir /u02
+
+mount paste reference like: /dev…. /yum and so on for two others.
+mount /dev/nvme0n2p1 /yum
+mount /dev/nvme0n2p2 /u01
+mount /dev/nvme0n2p3 /u02
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+After this, activity is still temporary, to make this permanent, we have to make one entry in vi /etc/fstab
+
+/dev/nvme0n2p1	/yum	ext4	defaults 0 0
+/dev/nvme0n2p2	/u01	ext4	defaults 0 0
+/dev/nvme0n2p3	/u02	ext4	defaults 0 0
+
+Just copy, paste and saved.
+
+Now restart the server with -  init 6
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+To check- df -hP
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+I)	How to make a YUM server.
+
+YUM- is the primary package management tool for installing, updating, removing, and managing software packages in Red Hat Enterprise Linux. YUM performs dependency resolution when installing, updating, and removing software packages. YUM can manage packages from installed repositories in the system or from.
+Creating a YUM server means- preparing a operating system for oracle software.
+
+Steps:
+df  -hP
+cd  /run/media……………
+ls
+cp   -r   *  /yum/
+
+cp- copy
+-r – recursive, copy files and folders including content.
+* - everything.
+
+Now, make entry in yum.repo
+
+vi   /etc/yum.repos.d/yum.repo
+
+just copy, past and save it.
+
+[BaseOS]
+name=BaseOS
+baseurl=file:///yum/BaseOS
+gpgcheck=0
+enabled=1
+
+[AppStream]
+name=AppStream
+baseurl=file:///yum/AppStream
+gpgcheck=0
+enabled=1
+
+
+yum clean all
+yum install telnet -y
+
+
+
+what is yum.repos.d ?
+Having a yum repository allows you to perform package install, removal, upgrade, and other operations on individual packages or groups of packages. yum repositories are essential for storing, managing, and delivering software to end systems
+
+
+Let’s now understand why we use YUM?
+In DVD- there are a small softwares.
+We can see this from ls command.
+Packages.
+These packages installed in os (rpm).
+In some OS, we can create:
+a)	DNS server
+b)	File server
+c)	Storage server
+d)	STP server
+e)	Etc……………
+
+So, to make any server, there should be a dedicated package to install particularly.
+
+To install individual we use-   rpm -ivh  package name with .rpm
+What we had done so far? 
+1.	Installed basic pre-requisite at OS level after installation.
+2.	Now, we start to install pre-requisite of an oracle software.
+
+We cannot install any oracle version in any linux platform with same steps.
+We want only specific document to install above.
+From root user, we not able to install oracle.
+For this we need to create a user but, before that we can create group.
+df -hP we have created a three mount points: /yum, /u01 and /u02
+so, now we will use /u01 and /u02
+in some industry, they will install: oinstall, dba and oper
+
+1.	Oinstall- refers to the group name used for the "Oracle Inventory Group," which is a system group responsible for managing the central inventory of all Oracle software installed on a server.
+2.	Dba- An Oracle Database Administrator (DBA) is a professional who manages, secures, and operates Oracle databases.
+3.	Oper- In Oracle database, an "operator" is a special symbol or keyword that performs a specific action on one or more data items (called operands), allowing you to manipulate data within a query by performing calculations, comparisons, or logical operations, like addition, subtraction.
+
+First, we will create a group:
+groupadd -g 54321 oinstall
+groupadd -g 54322 dba
+groupadd -g 54323 oper
+
+will create a user:
+useradd -u 54321 -g oinstall -G dba,oper oracle
+
+password
+echo oracle|passwd --stdin oracle
+
+chown -R oracle:oinstall  /u01
+chown -R oracle:oinstall  /u02
+chmod -R 775 /u01
+chmod -R 775 /u02
+
+ls -ld /u01   ---to see the rights
+
+In linux, we need to configure a security:
+
+vi   /etc/selinux/config
+I
+SELINUX = enforcing..  replace this with permissive
+Save and exit.
+
+Run this command now-  setenforce  permissive
+
+Now, we will set limits for oracle- yaha se karna hai aad ab
+
+Soft- minimum
+Hard- maximum
+
+
+
+Add the following lines to a file called "/etc/security/limits.conf" file.
+Just run these commands
+echo oracle   soft   nofile    1024 >> /etc/security/limits.conf
+echo oracle   hard   nofile    65536 >> /etc/security/limits.conf
+echo oracle   soft   nproc    16384 >> /etc/security/limits.conf
+echo oracle   hard   nproc    16384 >> /etc/security/limits.conf
+echo oracle   soft   stack    10240 >> /etc/security/limits.conf
+echo oracle   hard   stack    32768 >> /etc/security/limits.conf
+echo oracle   hard   memlock    134217728 >> /etc/security/limits.conf
+echo oracle   soft   memlock    134217728 >> /etc/security/limits.conf
+
+
+Install required packages for rhel8:
+
+yum install -y bc    
+yum install -y binutils
+yum install -y compat-libstdc++-33
+yum install -y elfutils-libelf
+yum install -y elfutils-libelf-devel
+yum install -y fontconfig-devel
+yum install -y glibc
+yum install -y glibc-devel
+yum install -y ksh
+yum install -y libaio
+yum install -y libaio-devel
+yum install -y libXrender
+yum install -y libXrender-devel
+yum install -y libX11
+yum install -y libXau
+yum install -y libXi
+yum install -y libXtst
+yum install -y libgcc
+yum install -y librdmacm-devel
+yum install -y libstdc++
+yum install -y libstdc++-devel
+yum install -y libxcb
+yum install -y make
+yum install -y smartmontools
+yum install -y sysstat
+yum install -y unixODBC
+yum install -y libnsl
+yum install -y libnsl.i686
+yum install -y libnsl2
+yum install -y libnsl2.i686
+
+one package need to install external that is – compat-libstdc++-33
+winscp- drag from download to /root
+now, run from linux.
+Command-    rpm   -ivh    copy paste that combat package and press enter.
+
+I – instruct RPM to install a package which is not yet installed on the system.
+V – verbose means to display detailed information about a process, operation or system
+H – this option displays the # as a progress bar for the operation.
+
+Note- v and h are optional flags.
+
+
+Kernel parameter settings
+Add the following lines to the "/etc/sysctl.conf" file.
+echo fs.file-max = 6815744 >> /etc/sysctl.conf
+echo kernel.sem = 256 32768 100 228 >> /etc/sysctl.conf
+echo kernel.shmmni = 4096 >> /etc/sysctl.conf
+echo kernel.shmall = 1073741824 >> /etc/sysctl.conf
+echo kernel.shmmax = 4398046511104 >> /etc/sysctl.conf
+echo kernel.panic_on_oops = 1 >> /etc/sysctl.conf
+echo net.core.rmem_default = 262144 >> /etc/sysctl.conf
+echo net.core.rmem_max = 4194304 >> /etc/sysctl.conf
+echo net.core.wmem_default = 262144 >> /etc/sysctl.conf
+echo net.core.wmem_max = 1048576 >> /etc/sysctl.conf
+echo net.ipv4.conf.all.rp_filter = 2 >> /etc/sysctl.conf
+echo net.ipv4.conf.default.rp_filter = 2 >> /etc/sysctl.conf
+echo fs.aio-max-nr = 1048576 >> /etc/sysctl.conf
+echo net.ipv4.ip_local_port_range = 9000 65500 >> /etc/sysctl.conf
+
+Activate the kernel parameter settings:
+sysctl -p
+
+Disable the firewall:( For Test Env)
+systemctl stop firewalld
+systemctl disable firewalld
+
+What is Kernel:
+Both operating system and Kernel are types of system software. The basic difference between the two is that an operating system is a system software that acts as the interface between the users and the machine, while a kernel is a part of the operating system that converts user commands into machine language.10 Nov 2023.
+It controls or manage the communication between hardware and software.
+Oracle utilize the memory in kernel machine means utilize the resources of operating system and OS is owned by Kernel.
+
+We must tell kernel what and how much we going to use and for that we install kernel parameter.
+
+What is sysctl?-  is a command tool that allows system admin to read and modify kernel parameters at runtime.
+
+As of now, Linux team competed their activity and now we can start oracle installation.
+Exit
+Root
+Logout
+Login as oracle
+Password- oracle
+
+Open WINSCP- 
+Drag and paste it into u01
+Now create a folder- mkdir -p /u01/app/oracle/product/19c/dbhome_1/   primary par karna hai and target par kar chuka hu
+unzip (paste oracle_linux_Software_Link) -d /u01/app/oracle/product/19c/dbhome_1/
+ls
+cd /u01/app/oracle/product/19c/dbhome_1/
+pwd
+this is a oracle home folder where oracle software is installed.
+run-   ./runInstaller- 
+Now, we will face an expected error
+Click on no
+cd cv
+ls
+cd admin
+vi cvu_config
+Remove # from  CV_ASSUME_DISTID=OEL5
+Now, again go back and run ./runInstaller
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+ 
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+DBCA- Database Configuration Assistant- we can create a database for an application. 
+
+pwd
+dbca tool is present in bin of oracle home.
+./dbca
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+ 
+
+
+ 
+
+/u02/oradata/{DB_UNIQUE_NAME}
+
+
+ 
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+ 
+
+
+
+
+Listener for 192.10.168.101
+
+vi listener.ora
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.101)(PORT = 1521))
+    )
+  )
+
+
+lsnrctl stop
+lsnrctl start
+lsnrctl status
+
+
+
+Listener for 192.10.168.102
+
+vi listener.ora
+
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.102)(PORT = 1521))
+    )
+  )
+
+
+lsnrctl stop
+lsnrctl start
+lsnrctl status
+
+
+
+TNS settings for both servers
+
+vi tnsnames.ora
+
+ORCL101 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.101)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orcl)
+    )
+  )
+
+ORCL102 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.10.102)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = orcl)
+    )
+  )
+
+
+
+From 192.168.10.102  run below command
+
+tnsping ORCL101
+
+
+If it works, then test actual DB login from target to main DB
+
+sqlplus sys@ORCL101 as sysdba
+
+
+Add Oracle Environment Variables
+
+vi ~/.bash_profile
+
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/19c/dbhome_1
+export ORACLE_SID=orcl
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+
+then hit below commands
+
+source ~/.bash_profile
+
+echo $ORACLE_HOME
+echo $PATH
+which lsnrctl
+
+
+lsnrctl start
+
+
+Now, configure fra in u02 for backup
+
+
+Create the FRA directory at OS level
+
+mkdir -p /u02/fra
+chmod -R 775 /u02/fra
+chown -R oracle:oinstall /u02/fra
+
+
+(set size first)
+
+ALTER SYSTEM SET db_recovery_file_dest_size=10G SCOPE=BOTH;     
+
+Then set location
+
+ALTER SYSTEM SET db_recovery_file_dest='/u02/fra' SCOPE=BOTH;     
+
+Then verify
+SHOW PARAMETER db_recovery_file_dest;
+
+ 
+
+SHOW PARAMETER db_recovery_file_dest_size;
+
+ 
+
+
+
+Now, configure OMF that is Permanent datafile location
+
+mkdir -p /u02/oradata/ORCL
+chown -R oracle:oinstall /u02/oradata
+chmod -R 750 /u02/oradata
+
+ALTER SYSTEM SET db_create_file_dest='/u02/oradata/ORCL' SCOPE=BOTH;
+
+if face error then follow below commands:
+
+ls -l $ORACLE_HOME/dbs/spfileORCL.ora    -   If it does not exist, create it from your current PFILE
+
+CREATE SPFILE FROM PFILE='$ORACLE_HOME/dbs/initORCL.ora';
+
+SHUTDOWN IMMEDIATE;
+STARTUP;
+
+
+Now run:
+ALTER SYSTEM SET db_create_file_dest='/u02/oradata/ORCL' SCOPE=BOTH;
+
+SHOW PARAMETER db_create_file_dest;
+
+
+Configure Archive Log Destination to FRA
+
+SHOW PARAMETER log_archive_dest_1;
+
+it confirms that log_archive_dest_1 is empty, meaning archive logs are not yet directed anywhere, which is risky
+
+ 
+
+now, Set Archive Log Destination to FRA
+
+ALTER SYSTEM SET log_archive_dest_1='LOCATION=USE_DB_RECOVERY_FILE_DEST' SCOPE=BOTH;
+
+
+Confirm the Change
+
+SHOW PARAMETER log_archive_dest_1;
+
+ 
+
+
+Now set database in archive log mode
+
+Sqlplus / as sysdba
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+SELECT log_mode FROM v$database;
+
+Now, ab backup lelo
+
+run {
+BACKUP DATABASE PLUS ARCHIVELOG DELETE INPUT;
+}
